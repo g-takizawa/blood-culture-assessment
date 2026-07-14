@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>血液培養採取判定</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7f6;
+      --surface: #ffffff;
+      --text: #1f2937;
+      --muted: #526173;
+      --line: #d7e0e5;
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --warning: #b45309;
+      --danger: #b91c1c;
+      --success: #15803d;
+      --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+      line-height: 1.6;
+    }
+
+    .app {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    header {
+      padding: 8px 0 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      line-height: 1.25;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 1.15rem;
+      line-height: 1.35;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .lead {
+      max-width: 820px;
+      color: var(--muted);
+    }
+
+    .notice {
+      margin: 18px 0 22px;
+      padding: 14px 16px;
+      background: #fff8e1;
+      border-left: 5px solid #d4a017;
+      border-radius: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .field {
+      margin-top: 12px;
+    }
+
+    label,
+    legend {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 700;
+    }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid #b9c6d0;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+    }
+
+    input[type="number"]:focus,
+    select:focus,
+    button:focus-visible {
+      outline: 3px solid rgba(15, 118, 110, 0.25);
+      outline-offset: 2px;
+    }
+
+    fieldset {
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .check-row {
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      margin: 9px 0;
+    }
+
+    .check-row input {
+      width: 18px;
+      height: 18px;
+      margin-top: 3px;
+      flex: 0 0 auto;
+    }
+
+    .check-row label {
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .divider {
+      margin: 18px 0;
+      border: 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    button {
+      min-height: 44px;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 7px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .secondary {
+      background: #e6edf1;
+      color: #111827;
+    }
+
+    .result {
+      display: none;
+      margin-top: 18px;
+      padding: 18px;
+      border-left: 6px solid #64748b;
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .result.take {
+      border-left-color: var(--danger);
+      background: #fff7f7;
+    }
+
+    .result.consider {
+      border-left-color: var(--warning);
+      background: #fffaf0;
+    }
+
+    .result.no {
+      border-left-color: var(--success);
+      background: #f5fff7;
+    }
+
+    .score {
+      margin-bottom: 8px;
+      font-size: 1.08rem;
+      font-weight: 800;
+    }
+
+    .reason-list {
+      margin: 10px 0 0;
+      padding-left: 1.3em;
+    }
+
+    footer {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        padding: 18px 14px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .actions button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>感染疑い患者の血液培養採取判定</h1>
+      <p class="lead">成人の感染疑い患者を対象に、NEWS2とqSOFA、例外病態の有無から血液培養採取の目安を表示します。</p>
+    </header>
+
+    <section class="notice" aria-label="注意事項">
+      本判定は院内運用案であり、前向きに検証された標準基準ではありません。臨床判断を代替しないため、患者背景と担当医判断を優先してください。
+    </section>
+
+    <form id="assessment-form" novalidate>
+      <div class="grid">
+        <section class="card" aria-labelledby="news2-title">
+          <h2 id="news2-title">NEWS2</h2>
+
+          <div class="field">
+            <label for="rr">呼吸数（回/分）</label>
+            <input id="rr" name="rr" type="number" min="0" step="1" inputmode="numeric" autocomplete="off" required />
+          </div>
+
+          <div class="field">
+            <label for="spo2">SpO2（%）</label>
+            <input id="spo2" name="spo2" type="number" min="0" max="100" step="1" inputmode="numeric" autocomplete="off" required />
+          </div>
+
+          <div class="check-row">
+            <input id="oxygen" name="oxygen" type="checkbox" />
+            <label for="oxygen">酸素投与中（+2点）</label>
+          </div>
+
+          <div class="field">
+            <label for="sbp">収縮期血圧（mmHg）</label>
+            <input id="sbp" name="sbp" type="number" min="0" step="1" inputmode="numeric" autocomplete="off" required />
+          </div>
+
+          <div class="field">
+            <label for="pulse">脈拍（回/分）</label>
+            <input id="pulse" name="pulse" type="number" min="0" step="1" inputmode="numeric" autocomplete="off" required />
+          </div>
+
+          <div class="field">
+            <label for="temp">体温（℃）</label>
+            <input id="temp" name="temp" type="number" min="25" max="45" step="0.1" inputmode="decimal" autocomplete="off" required />
+          </div>
+
+          <div class="field">
+            <label for="mental">意識状態</label>
+            <select id="mental" name="mental">
+              <option value="0">Alert</option>
+              <option value="3">新規錯乱、Voice、Pain、Unresponsive</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="qsofa-title">
+          <h2 id="qsofa-title">qSOFA・例外病態</h2>
+
+          <fieldset>
+            <legend>qSOFA</legend>
+            <div class="check-row">
+              <input id="q_rr" name="q_rr" type="checkbox" />
+              <label for="q_rr">呼吸数 22回/分以上</label>
+            </div>
+
+            <div class="check-row">
+              <input id="q_sbp" name="q_sbp" type="checkbox" />
+              <label for="q_sbp">収縮期血圧 100 mmHg以下</label>
+            </div>
+
+            <div class="check-row">
+              <input id="q_mental" name="q_mental" type="checkbox" />
+              <label for="q_mental">意識変容（Glasgow Coma Scale 15未満）</label>
+            </div>
+          </fieldset>
+
+          <hr class="divider" />
+
+          <div class="check-row">
+            <input id="exception" name="exception" type="checkbox" />
+            <label for="exception">スコアに関係なく採取する病態がある</label>
+          </div>
+
+          <p class="hint">
+            例：敗血症性ショック、感染性心内膜炎、カテーテル関連血流感染症、発熱性好中球減少症、細菌性髄膜炎、化膿性関節炎、椎体炎・硬膜外膿瘍、悪寒戦慄、高度免疫不全、担当医が菌血症を強く疑う場合。
+          </p>
+        </section>
+      </div>
+
+      <div class="actions">
+        <button class="primary" type="submit">判定する</button>
+        <button class="secondary" type="reset">リセット</button>
+      </div>
+    </form>
+
+    <section id="result" class="result" aria-live="polite"></section>
+
+    <footer>
+      NEWS2は通常のSpO2 Scale 1を使用しています。慢性高二酸化炭素血症でSpO2 Scale 2を用いる患者には未対応です。血液培養を採取する場合は、原則として抗菌薬投与前に2セット採取し、採取のために抗菌薬投与を大きく遅らせないでください。
+    </footer>
+  </main>
+
+  <script>
+    const form = document.getElementById("assessment-form");
+    const result = document.getElementById("result");
+
+    function getNumber(id) {
+      const value = document.getElementById(id).value;
+      return value === "" ? NaN : Number(value);
+    }
+
+    function newsScore() {
+      const rr = getNumber("rr");
+      const spo2 = getNumber("spo2");
+      const sbp = getNumber("sbp");
+      const pulse = getNumber("pulse");
+      const temp = getNumber("temp");
+      const oxygen = document.getElementById("oxygen").checked ? 2 : 0;
+      const mental = Number(document.getElementById("mental").value);
+
+      if (![rr, spo2, sbp, pulse, temp].every(Number.isFinite) || rr <= 0 || spo2 <= 0 || sbp <= 0 || pulse <= 0) {
+        throw new Error("NEWS2の全項目を入力してください。");
+      }
+
+      let score = 0;
+
+      if (rr <= 8) score += 3;
+      else if (rr <= 11) score += 1;
+      else if (rr <= 20) score += 0;
+      else if (rr <= 24) score += 2;
+      else score += 3;
+
+      if (spo2 <= 91) score += 3;
+      else if (spo2 <= 93) score += 2;
+      else if (spo2 <= 95) score += 1;
+
+      score += oxygen;
+
+      if (sbp <= 90) score += 3;
+      else if (sbp <= 100) score += 2;
+      else if (sbp <= 110) score += 1;
+      else if (sbp >= 220) score += 3;
+
+      if (pulse <= 40) score += 3;
+      else if (pulse <= 50) score += 1;
+      else if (pulse <= 90) score += 0;
+      else if (pulse <= 110) score += 1;
+      else if (pulse <= 130) score += 2;
+      else score += 3;
+
+      if (temp <= 35.0) score += 3;
+      else if (temp <= 36.0) score += 1;
+      else if (temp <= 38.0) score += 0;
+      else if (temp <= 39.0) score += 1;
+      else score += 2;
+
+      return score + mental;
+    }
+
+    function qsofaScore() {
+      return ["q_rr", "q_sbp", "q_mental"].filter((id) => document.getElementById(id).checked).length;
+    }
+
+    function buildReasons(news, qsofa, exception) {
+      const reasons = [];
+      if (exception) reasons.push("例外病態あり");
+      if (news >= 5) reasons.push("NEWS2 5点以上");
+      if (qsofa >= 2) reasons.push("qSOFA 2点以上");
+      if (news >= 3 && news <= 4 && qsofa >= 1) reasons.push("NEWS2 3-4点かつqSOFA 1点以上");
+      if (reasons.length === 0 && (news >= 3 && news <= 4)) reasons.push("NEWS2 3-4点");
+      if (reasons.length === 0 && qsofa === 1) reasons.push("qSOFA 1点");
+      return reasons;
+    }
+
+    function renderResult(type, title, text, news, qsofa, reasons) {
+      result.className = `result ${type}`;
+      result.style.display = "block";
+      result.innerHTML = `
+        <div class="score">NEWS2：${news}点 ／ qSOFA：${qsofa}点</div>
+        <h2>${title}</h2>
+        <p>${text}</p>
+        ${reasons.length > 0 ? `<ul class="reason-list">${reasons.map((reason) => `<li>${reason}</li>`).join("")}</ul>` : ""}
+      `;
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      try {
+        const news = newsScore();
+        const qsofa = qsofaScore();
+        const exception = document.getElementById("exception").checked;
+        const reasons = buildReasons(news, qsofa, exception);
+
+        if (exception || news >= 5 || qsofa >= 2 || (news >= 3 && news <= 4 && qsofa >= 1)) {
+          renderResult(
+            "take",
+            "血液培養2セットの採取を推奨",
+            "可能であれば抗菌薬投与前に採取してください。採取のために抗菌薬投与を大きく遅らせないでください。",
+            news,
+            qsofa,
+            reasons
+          );
+          return;
+        }
+
+        if ((news >= 3 && news <= 4) || qsofa === 1) {
+          renderResult(
+            "consider",
+            "臨床所見に基づき採取を検討",
+            "感染巣、悪寒戦慄、免疫不全、血管内デバイス、乳酸値、抗菌薬開始予定などを考慮してください。",
+            news,
+            qsofa,
+            reasons
+          );
+          return;
+        }
+
+        renderResult(
+          "no",
+          "ルーチン採取は原則不要",
+          "ただし、菌血症を疑う病態や担当医判断がある場合は採取してください。",
+          news,
+          qsofa,
+          []
+        );
+      } catch (error) {
+        result.className = "result consider";
+        result.style.display = "block";
+        result.innerHTML = `<h2>入力エラー</h2><p>${error.message}</p>`;
+      }
+    });
+
+    form.addEventListener("reset", () => {
+      window.setTimeout(() => {
+        result.style.display = "none";
+        result.innerHTML = "";
+        result.className = "result";
+      }, 0);
+    });
+  </script>
+</body>
+</html>
