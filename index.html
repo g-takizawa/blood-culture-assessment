@@ -144,6 +144,15 @@
       font-size: 0.92rem;
     }
 
+    .score-display {
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #eef7f5;
+      color: var(--primary-dark);
+      font-weight: 800;
+    }
+
     .divider {
       margin: 18px 0;
       border: 0;
@@ -261,8 +270,9 @@
               <option value="3">8以下（3点）</option>
               <option value="1">9-11（1点）</option>
               <option value="0">12-20（0点）</option>
-              <option value="2">21-24（2点）</option>
-              <option value="3">25以上（3点）</option>
+              <option value="2" data-qsofa="0">21（2点）</option>
+              <option value="2" data-qsofa="1">22-24（2点、qSOFA該当）</option>
+              <option value="3" data-qsofa="1">25以上（3点、qSOFA該当）</option>
             </select>
           </div>
 
@@ -286,8 +296,8 @@
             <label for="sbp">収縮期血圧（mmHg）</label>
             <select id="sbp" name="sbp" required>
               <option value="">選択してください</option>
-              <option value="3">90以下（3点）</option>
-              <option value="2">91-100（2点）</option>
+              <option value="3" data-qsofa="1">90以下（3点、qSOFA該当）</option>
+              <option value="2" data-qsofa="1">91-100（2点、qSOFA該当）</option>
               <option value="1">101-110（1点）</option>
               <option value="0">111-219（0点）</option>
               <option value="3">220以上（3点）</option>
@@ -323,7 +333,7 @@
             <label for="mental">意識状態</label>
             <select id="mental" name="mental">
               <option value="0">清明（普段どおり）</option>
-              <option value="3">新たな意識変容あり（錯乱、呼びかけ・痛み刺激への反応、無反応）</option>
+              <option value="3" data-qsofa="1">新たな意識変容あり（錯乱、呼びかけ・痛み刺激への反応、無反応）</option>
             </select>
           </div>
         </section>
@@ -332,19 +342,20 @@
           <h2 id="qsofa-title">qSOFA・例外病態</h2>
 
           <fieldset>
-            <legend>qSOFA</legend>
+            <legend>qSOFA（NEWS2項目から自動計算）</legend>
+            <div id="qsofa-score" class="score-display">qSOFA：0点</div>
             <div class="check-row">
-              <input id="q_rr" name="q_rr" type="checkbox" />
+              <input id="q_rr" name="q_rr" type="checkbox" disabled />
               <label for="q_rr">呼吸数 22回/分以上</label>
             </div>
 
             <div class="check-row">
-              <input id="q_sbp" name="q_sbp" type="checkbox" />
+              <input id="q_sbp" name="q_sbp" type="checkbox" disabled />
               <label for="q_sbp">収縮期血圧 100 mmHg以下</label>
             </div>
 
             <div class="check-row">
-              <input id="q_mental" name="q_mental" type="checkbox" />
+              <input id="q_mental" name="q_mental" type="checkbox" disabled />
               <label for="q_mental">意識変容（Glasgow Coma Scale 15未満）</label>
             </div>
           </fieldset>
@@ -378,6 +389,7 @@
   <script>
     const form = document.getElementById("assessment-form");
     const result = document.getElementById("result");
+    const qsofaScoreDisplay = document.getElementById("qsofa-score");
 
     function getScore(id) {
       const value = document.getElementById(id).value;
@@ -404,14 +416,25 @@
       return ["q_rr", "q_sbp", "q_mental"].filter((id) => document.getElementById(id).checked).length;
     }
 
+    function selectedQsofaValue(id) {
+      const selectedOption = document.getElementById(id).selectedOptions[0];
+      return selectedOption?.dataset.qsofa === "1";
+    }
+
+    function updateAutoQsofa() {
+      document.getElementById("q_rr").checked = selectedQsofaValue("rr");
+      document.getElementById("q_sbp").checked = selectedQsofaValue("sbp");
+      document.getElementById("q_mental").checked = selectedQsofaValue("mental");
+      qsofaScoreDisplay.textContent = `qSOFA：${qsofaScore()}点`;
+    }
+
     function buildReasons(news, qsofa, exception) {
       const reasons = [];
       if (exception) reasons.push("例外病態あり");
       if (news >= 5) reasons.push("NEWS2 5点以上");
-      if (qsofa >= 2) reasons.push("qSOFA 2点以上");
       if (news >= 3 && news <= 4 && qsofa >= 1) reasons.push("NEWS2 3-4点かつqSOFA 1点以上");
       if (reasons.length === 0 && (news >= 3 && news <= 4)) reasons.push("NEWS2 3-4点");
-      if (reasons.length === 0 && qsofa === 1) reasons.push("qSOFA 1点");
+      if (news >= 3 && news <= 4 && qsofa === 0) reasons.push("qSOFA 0点");
       return reasons;
     }
 
@@ -431,14 +454,19 @@
 
       try {
         const news = newsScore();
+        updateAutoQsofa();
         const qsofa = qsofaScore();
         const exception = document.getElementById("exception").checked;
         const reasons = buildReasons(news, qsofa, exception);
 
-        if (exception || news >= 5 || qsofa >= 2 || (news >= 3 && news <= 4 && qsofa >= 1)) {
+        if (exception || news >= 5 || (news >= 3 && news <= 4 && qsofa >= 1)) {
+          const title = news >= 3 && news <= 4 && qsofa >= 2
+            ? "血液培養2セットを採取"
+            : "血液培養2セットの採取を推奨";
+
           renderResult(
             "take",
-            "血液培養2セットの採取を推奨",
+            title,
             "可能であれば抗菌薬投与前に採取してください。採取のために抗菌薬投与を大きく遅らせないでください。",
             news,
             qsofa,
@@ -447,10 +475,10 @@
           return;
         }
 
-        if ((news >= 3 && news <= 4) || qsofa === 1) {
+        if (news >= 3 && news <= 4 && qsofa === 0) {
           renderResult(
             "consider",
-            "臨床所見に基づき採取を検討",
+            "個別判断",
             "感染巣、悪寒戦慄、免疫不全、血管内デバイス、乳酸値、抗菌薬開始予定などを考慮してください。",
             news,
             qsofa,
@@ -474,13 +502,18 @@
       }
     });
 
+    form.addEventListener("change", updateAutoQsofa);
+
     form.addEventListener("reset", () => {
       window.setTimeout(() => {
+        updateAutoQsofa();
         result.style.display = "none";
         result.innerHTML = "";
         result.className = "result";
       }, 0);
     });
+
+    updateAutoQsofa();
   </script>
 </body>
 </html>
