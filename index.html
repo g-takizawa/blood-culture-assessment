@@ -226,6 +226,25 @@
       padding-left: 1.3em;
     }
 
+    .evidence {
+      margin-top: 18px;
+    }
+
+    .evidence p,
+    .evidence li {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .evidence ul {
+      margin: 10px 0 0;
+      padding-left: 1.3em;
+    }
+
+    .evidence a {
+      color: var(--primary-dark);
+    }
+
     footer {
       margin-top: 24px;
       color: var(--muted);
@@ -253,10 +272,6 @@
       <h1>感染疑い患者の血液培養採取判定</h1>
       <p class="lead">成人の感染疑い患者を対象に、NEWS2とqSOFA、例外病態の有無から血液培養採取の目安を表示します。</p>
     </header>
-
-    <section class="notice" aria-label="注意事項">
-      本判定は院内運用案であり、前向きに検証された標準基準ではありません。臨床判断を代替しないため、患者背景と担当医判断を優先してください。
-    </section>
 
     <form id="assessment-form" novalidate>
       <div class="grid">
@@ -380,6 +395,22 @@
     </form>
 
     <section id="result" class="result" aria-live="polite"></section>
+
+    <section class="card evidence" aria-labelledby="evidence-title">
+      <h2 id="evidence-title">根拠と位置づけ</h2>
+      <p>
+        NEWS2で急性疾患の重症度を広く評価し、NEWS2 3-4点の中間リスクではqSOFAの臓器障害リスクを加えて層別化します。血液培養は、敗血症が疑われ抗菌薬投与が必要な場面で、投与前に可能な範囲で採取することが推奨されています。
+      </p>
+      <p class="hint">
+        このフロー自体は血液培養採取基準として前向き検証された標準基準ではありません。既存スコアと敗血症診療ガイドラインを組み合わせた院内運用支援として使用してください。
+      </p>
+      <ul>
+        <li><a href="https://www.rcp.ac.uk/resources/national-early-warning-score-news-2/" target="_blank" rel="noopener">Royal College of Physicians. National Early Warning Score (NEWS) 2.</a></li>
+        <li><a href="https://pubmed.ncbi.nlm.nih.gov/26903335/" target="_blank" rel="noopener">Seymour CW, et al. Assessment of Clinical Criteria for Sepsis. JAMA. 2016.</a></li>
+        <li><a href="https://pubmed.ncbi.nlm.nih.gov/26903338/" target="_blank" rel="noopener">Singer M, et al. The Third International Consensus Definitions for Sepsis and Septic Shock. JAMA. 2016.</a></li>
+        <li><a href="https://pubmed.ncbi.nlm.nih.gov/34599691/" target="_blank" rel="noopener">Evans L, et al. Surviving Sepsis Campaign Guidelines 2021. Intensive Care Med. 2021.</a></li>
+      </ul>
+    </section>
 
     <footer>
       NEWS2は通常のSpO2 Scale 1を使用しています。慢性高二酸化炭素血症でSpO2 Scale 2を用いる患者には未対応です。血液培養を採取する場合は、原則として抗菌薬投与前に2セット採取し、採取のために抗菌薬投与を大きく遅らせないでください。
